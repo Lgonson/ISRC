@@ -1,0 +1,176 @@
+import os
+import time
+import undetected_chromedriver as uc
+from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
+import pandas as pd
+
+# Lists
+artist_names = []
+track_titles = []
+versions = []
+years = []
+durations = []
+isrcs = []
+releases = []
+release_labels = []
+release_dates = []
+release_artists = []
+upcs = []
+
+# Waiting time
+tiempo_maximo = 15
+tiempo_muy_largo = 5
+tiempo_largo = 3
+tiempo_corto = 0.2
+
+# Reading Sub_Hannes
+hannes = pd.read_excel(r"C:\Users\Gonzalez\Projekten\selenium\Sub.xlsx")
+artist_sub = hannes["ARTIST"]
+track_title_sub = hannes["TRACK-TITEL1"]
+
+print('Excel cargado')
+
+# Starting Browser
+print('Starting web browser')
+options = webdriver.ChromeOptions()
+options.add_argument("start-maximized")
+driver = uc.Chrome(options=options)
+
+options = webdriver.ChromeOptions()
+options.add_experimental_option("detach", True)
+
+os.environ['PATH'] += r"C:\Users\Gonzalez\chrome - web driver"
+
+driver.implicitly_wait(tiempo_muy_largo)
+print(f'La pausa es implicita de {tiempo_muy_largo}')
+
+time.sleep(tiempo_corto)
+print(f'La pausa es de {tiempo_corto}')
+
+website = "https://isrcsearch.ifpi.org/#!/search"
+driver.get(website)
+
+print(f'La pausa es implicita de {tiempo_muy_largo}')
+driver.implicitly_wait(tiempo_muy_largo)
+
+for a, t in zip(artist_sub, track_title_sub):
+    time.sleep(tiempo_largo)
+    print(f'La pausa es de {tiempo_largo}')
+
+
+    item1 = driver.find_element(by="id", value="artistName")
+    item1.clear()
+    item1.send_keys(a)
+    print('La banda se cargó con éxito')
+
+    time.sleep(tiempo_largo)
+    print(f'La pausa es de {tiempo_largo}')
+
+    item2 = driver.find_element(by="id", value="trackTitle")
+    item2.clear()
+    item2.send_keys(t)
+    print('La canción se cargó con éxito')
+
+    time.sleep(tiempo_largo)
+    print(f'La pausa es de {tiempo_largo}')
+
+    search = driver.find_element(by="id", value="submit-search")
+    search.click()
+    print('Search')
+
+    time.sleep(tiempo_muy_largo)
+    print(f'La pausa es de {tiempo_muy_largo}')
+
+    # Scroll to the button position
+    show_releases = driver.find_element(by="xpath", value='/html/body/div[2]/div/div[2]/div/div[3]/button')
+    driver.execute_script("arguments[0].scrollIntoView();", show_releases)
+    time.sleep(tiempo_largo)
+
+    # Attempt to click the button
+    try:
+        show_releases.click()
+    except:
+        # If the button is still not clickable, try another solution
+        # Scroll to the button position again
+        driver.execute_script("arguments[0].scrollIntoView();", show_releases)
+        time.sleep(tiempo_corto)
+        # Use ActionChains to simulate the click
+        action = ActionChains(driver)
+        action.move_to_element(show_releases).click().perform()
+
+    time.sleep(tiempo_muy_largo)
+    print(f'La pausa es de {tiempo_muy_largo}')
+
+    show_all_results = driver.find_element(by="xpath", value="/html/body/div[2]/div/div[2]/div/div[3]/select/option[1]")
+    show_all_results.click()
+    print('Show all results')
+
+    time.sleep(tiempo_largo)
+    print(f'La pausa es de {tiempo_largo}')
+
+    print('Load rows')
+    rows = driver.find_elements(by="xpath", value="//tbody/tr")
+    driver.implicitly_wait(tiempo_corto)
+
+    for row in rows:
+        try:
+            artist_name = row.find_element(by="css selector", value="td[dedupe='artistName'].ng-binding").text
+            print(artist_name)
+            track_title = row.find_element(by="css selector", value="td[dedupe='trackTitle'].ng-binding").text
+            print(track_title)
+            version = row.find_element(by="css selector", value="td[dedupe='recordingVersion'].ng-binding").text
+            print(version)
+            year = row.find_element(by="css selector", value="td[dedupe='recordingYear'].ng-binding").text
+            print(year)
+            duration = row.find_element(by="css selector", value="td[dedupe='duration'].ng-binding").text
+            print(duration)
+            isrc = row.find_element(by="css selector", value="td[dedupe='isrcCode'].ng-binding").text
+            print(isrc)
+            release = row.find_element(by="css selector", value="td[dedupe='releaseName'].ng-binding").text
+            print(release)
+            release_label = row.find_element(by="css selector", value="td[dedupe='releaseLabel'].ng-binding").text
+            print(release_label)
+            release_date = row.find_element(by="css selector", value="td[dedupe='releaseDate'].ng-binding").text
+            print(release_date)
+            release_artist = row.find_element(by="css selector", value="td[dedupe='releaseArtist'].ng-binding").text
+            print(release_artist)
+            upc = row.find_element(by="css selector", value="td[dedupe='upcCode'].ng-binding").text
+            print(upc)
+
+            time.sleep(tiempo_corto)
+            print(f'La pausa es de {tiempo_corto}')
+
+            artist_names.append(artist_name)
+            track_titles.append(track_title)
+            versions.append(version)
+            years.append(year)
+            durations.append(duration)
+            isrcs.append(isrc)
+            releases.append(release)
+            release_labels.append(release_label)
+            release_dates.append(release_date)
+            release_artists.append(release_artist)
+            upcs.append(upc)
+
+            print('Append all items from row')
+
+        except:
+            continue
+
+df = pd.DataFrame({
+    "artist": artist_names,
+    "track_title": track_titles,
+    "version": versions,
+    "years": years,
+    "duration": durations,
+    "isrc": isrcs,
+    "release": releases,
+    "Release_label": release_labels,
+    "release_date": release_dates,
+    "release_artist": release_artists,
+    "upc": upcs
+})
+
+df.to_csv(r"C:\Users\Gonzalez\Projekten\df.csv")
+
